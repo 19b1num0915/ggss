@@ -1,0 +1,26 @@
+stages:
+  - deploy
+build & deploy-develop:
+  tags:
+    - shelby
+  stage: deploy
+  before_script:
+    - eval $(ssh-agent -s) # Run the SSH client 
+    # Adding environment's variable SSH_PRIVATE_KEY to the SSH client's agent that manages the private keys
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    # Create the SSH directory and give it the right permissions
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    # - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - npm install
+    - CI=FALSE npm run build
+    - ssh -o StrictHostKeyChecking=no sonar@172.16.3.54 "cd border; docker-compose pull && docker-compose up -d --build"
+    # - scp -o StrictHostKeyChecking=no build/libs/api-0.0.1-SNAPSHOT.jar ubuntu@43.231.114.212:/home/ubuntu/backend/
+    # - ssh -o StrictHostKeyChecking=no root@43.231.114.212 "systemctl restart laika-api"
+  only:
+    - master
+  # when: manual
+  # artifacts:
+  #   paths:
+  #     - build/libs/api-0.0.1-SNAPSHOT.jar
